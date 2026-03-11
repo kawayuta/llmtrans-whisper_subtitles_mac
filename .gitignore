@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+settings.json
+.DS_Store
+audio/capture_helper
+*.egg-info/
+dist/
+build/
