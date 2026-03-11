@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-LLM Trans - リアルタイム字幕アプリ for macOS
-ブラウザ等の音声をfaster-whisperで並列文字起こしし、字幕表示する。
+LLM Trans - Real-time subtitle & translation app for macOS
+Captures audio from apps, transcribes with faster-whisper, translates with Ollama.
 """
 
 import logging
@@ -87,12 +87,12 @@ class Application:
 
             self._running = True
             self._selector.set_status(
-                f"字幕表示中 ({self._audio_backend.name})", "green"
+                f"Subtitles active ({self._audio_backend.name})", "green"
             )
 
         except Exception as e:
             logger.error(f"起動失敗: {e}", exc_info=True)
-            self._selector.set_status(f"エラー: {e}", "red")
+            self._selector.set_status(f"Error: {e}", "red")
             self._root.after(0, lambda: (
                 self._selector._start_btn.config(state=tk.NORMAL),
                 self._selector._stop_btn.config(state=tk.DISABLED),
@@ -116,8 +116,8 @@ class Application:
             return backend
 
         raise RuntimeError(
-            "利用可能な音声バックエンドがありません。\n"
-            "画面収録の権限を許可してください。"
+            "No audio backend available.\n"
+            "Please grant Screen Recording permission."
         )
 
     def _create_overlay(self) -> None:

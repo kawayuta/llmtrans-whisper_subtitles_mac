@@ -7,7 +7,7 @@ from config import AppConfig, OverlayDisplayMode
 
 
 class SubtitleOverlay:
-    """画面下部に表示する字幕オーバーレイ（短文モード/リストモード対応）"""
+    """Subtitle overlay displayed at the bottom of the screen (short/list mode)"""
 
     FONT_SIZE_MIN = 10
     FONT_SIZE_MAX = 60
@@ -18,14 +18,11 @@ class SubtitleOverlay:
         self._parent: tk.Tk | None = None
         self._lock = threading.Lock()
 
-        # 短文モード用
         self._label: tk.Label | None = None
         self._subtitles: deque[tuple[float, str]] = deque(maxlen=config.subtitle_max_lines)
 
-        # リストモード用
         self._text_widget: tk.Text | None = None
 
-        # 動的に変更可能な状態
         self._font_size = config.font_size
         self._display_mode = config.overlay_display_mode
 
@@ -36,7 +33,6 @@ class SubtitleOverlay:
         self._window.attributes('-topmost', True)
         self._window.attributes('-alpha', self._config.overlay_opacity)
 
-        # 画面下部中央に配置
         screen_w = self._window.winfo_screenwidth()
         screen_h = self._window.winfo_screenheight()
         x = (screen_w - self._config.overlay_width) // 2
@@ -60,22 +56,20 @@ class SubtitleOverlay:
 
         self._build_content()
 
-        # 右クリックメニュー
+        # Context menu
         self._context_menu = tk.Menu(self._window, tearoff=0)
-        self._context_menu.add_command(label="フォント +", command=self._font_increase)
-        self._context_menu.add_command(label="フォント -", command=self._font_decrease)
+        self._context_menu.add_command(label="Font +", command=self._font_increase)
+        self._context_menu.add_command(label="Font -", command=self._font_decrease)
         self._context_menu.add_separator()
-        self._context_menu.add_command(label="短文モードに切替",
+        self._context_menu.add_command(label="Short mode",
                                        command=lambda: self._switch_mode(OverlayDisplayMode.SHORT))
-        self._context_menu.add_command(label="リストモードに切替",
+        self._context_menu.add_command(label="List mode",
                                        command=lambda: self._switch_mode(OverlayDisplayMode.LIST))
 
-        self._window.bind('<Button-2>', self._show_context_menu)  # macOS middle
-        self._window.bind('<Button-3>', self._show_context_menu)  # right click
-        # macOS: Ctrl+Click
+        self._window.bind('<Button-2>', self._show_context_menu)
+        self._window.bind('<Button-3>', self._show_context_menu)
         self._window.bind('<Control-Button-1>', self._show_context_menu)
 
-        # スクロールでフォントサイズ変更
         self._window.bind('<MouseWheel>', self._on_scroll)
 
         self._keep_topmost()
@@ -83,7 +77,6 @@ class SubtitleOverlay:
             self._cleanup_loop()
 
     def _build_content(self) -> None:
-        """現在のモードに合わせてウィジェットを構築"""
         for w in self._frame.winfo_children():
             w.destroy()
         self._label = None
@@ -108,11 +101,9 @@ class SubtitleOverlay:
         )
         self._label.pack(fill=tk.BOTH, expand=True)
 
-        # ドラッグ移動
         self._label.bind('<Button-1>', self._start_drag)
         self._label.bind('<B1-Motion>', self._on_drag)
 
-        # 既存の字幕を再表示
         self._update_short_display()
 
     def _build_list_mode(self) -> None:
@@ -140,12 +131,11 @@ class SubtitleOverlay:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self._text_widget.pack(fill=tk.BOTH, expand=True)
 
-        # ドラッグ移動
         self._text_widget.bind('<Button-1>', self._start_drag)
         self._text_widget.bind('<B1-Motion>', self._on_drag)
 
     def show_subtitle(self, text: str) -> None:
-        """スレッドセーフ: 新しい字幕行を表示"""
+        """Thread-safe: display a new subtitle line"""
         with self._lock:
             self._subtitles.append((time.time(), text))
         if self._window:
@@ -174,7 +164,7 @@ class SubtitleOverlay:
         self._text_widget.see(tk.END)
         self._text_widget.config(state=tk.DISABLED)
 
-    # --- フォントサイズ ---
+    # --- Font size ---
 
     def _font_increase(self) -> None:
         self._set_font_size(self._font_size + 2)
@@ -194,20 +184,18 @@ class SubtitleOverlay:
             self._text_widget.config(font=font)
 
     def _on_scroll(self, event) -> None:
-        # macOS: event.delta is positive for scroll-up
         if event.delta > 0:
             self._font_increase()
         elif event.delta < 0:
             self._font_decrease()
 
-    # --- モード切替 ---
+    # --- Mode switch ---
 
     def _switch_mode(self, mode: OverlayDisplayMode) -> None:
         if mode == self._display_mode:
             return
         self._display_mode = mode
 
-        # ウィンドウサイズを調整
         if self._window:
             geo = self._window.geometry()
             parts = geo.split('+')
@@ -223,12 +211,12 @@ class SubtitleOverlay:
         if mode == OverlayDisplayMode.SHORT:
             self._cleanup_loop()
 
-    # --- 右クリックメニュー ---
+    # --- Context menu ---
 
     def _show_context_menu(self, event) -> None:
         self._context_menu.post(event.x_root, event.y_root)
 
-    # --- 常に最前面 ---
+    # --- Always on top ---
 
     def _keep_topmost(self) -> None:
         if self._window:
@@ -236,7 +224,7 @@ class SubtitleOverlay:
             self._window.lift()
             self._window.after(3000, self._keep_topmost)
 
-    # --- 短文モードの期限切れクリーンアップ ---
+    # --- Short mode cleanup ---
 
     def _cleanup_loop(self) -> None:
         if self._display_mode != OverlayDisplayMode.SHORT:
@@ -250,7 +238,7 @@ class SubtitleOverlay:
         if self._window:
             self._window.after(500, self._cleanup_loop)
 
-    # --- ドラッグ移動 ---
+    # --- Drag ---
 
     def _start_drag(self, event) -> None:
         self._drag_x = event.x

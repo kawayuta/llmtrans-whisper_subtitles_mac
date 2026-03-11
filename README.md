@@ -1,33 +1,37 @@
 # LLM Trans
 
-macOS向けリアルタイム字幕・翻訳アプリ。ブラウザや動画プレイヤーの音声をキャプチャし、[faster-whisper](https://github.com/SYSTRAN/faster-whisper)で文字起こし、[Ollama](https://ollama.com/)でリアルタイム翻訳して字幕表示します。
+Real-time subtitle and translation app for macOS. Captures audio from any app using [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit), transcribes with [faster-whisper](https://github.com/SYSTRAN/faster-whisper), and translates in real-time using local LLMs via [Ollama](https://ollama.com/).
 
-## 特徴
+<p align="center">
+  <img src="assets/screenshot.png" alt="LLM Trans Screenshot" width="400">
+</p>
 
-- **アプリ別音声キャプチャ** — ScreenCaptureKitで特定アプリの音声だけを取得（システム全体の音声キャプチャにも対応）
-- **並列文字起こし** — 2ワーカーが50%オーバーラップで処理し、途切れない字幕を実現
-- **リアルタイム翻訳** — OllamaのローカルLLMで翻訳（translategemma等に対応）
-- **字幕オーバーレイ** — 常に最前面に表示、ドラッグ移動・フォントサイズ変更可能
-- **短文/リストモード** — 最新数行の短文表示と、タイムスタンプ付きスクロールログの切替
-- **設定の永続化** — 前回の設定を自動保存・復元
+## Features
 
-## 対応環境
+- **Per-app audio capture** — Uses ScreenCaptureKit to capture audio from a specific app (system-wide capture via BlackHole also supported)
+- **Parallel transcription** — Two workers process overlapping chunks for seamless subtitles
+- **Real-time translation** — Translate via local LLMs through Ollama (e.g., translategemma)
+- **Subtitle overlay** — Always-on-top, draggable overlay with adjustable font size
+- **Short / List mode** — Switch between latest-lines view and scrollable timestamped log
+- **Persistent settings** — Automatically saves and restores your configuration
 
-- **OS:** macOS 14 (Sonoma) 以降
-- **CPU:** Apple Silicon (M1/M2/M3/M4) 推奨
-- **Python:** 3.11以降
-- **Ollama:** 翻訳機能を使う場合のみ必要
+## Requirements
 
-## セットアップ
+- **OS:** macOS 14 (Sonoma) or later
+- **CPU:** Apple Silicon (M1/M2/M3/M4) recommended
+- **Python:** 3.11+
+- **Ollama:** Required only for the translation feature
 
-### 1. リポジトリのクローン
+## Setup
+
+### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/llmtrans.git
-cd llmtrans
+git clone https://github.com/kawayuta/llmtrans-whisper_subtitles_mac.git
+cd llmtrans-whisper_subtitles_mac
 ```
 
-### 2. Python環境の構築
+### 2. Python environment
 
 ```bash
 python3 -m venv venv
@@ -35,9 +39,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. ScreenCaptureKitヘルパーのビルド
+### 3. Build the ScreenCaptureKit helper
 
-アプリ別音声キャプチャを使うには、Swiftヘルパーをビルドします:
+Required for per-app audio capture:
 
 ```bash
 cd audio
@@ -45,57 +49,54 @@ swiftc capture_helper.swift -o capture_helper -framework ScreenCaptureKit -frame
 cd ..
 ```
 
-> ビルドにはXcode Command Line Toolsが必要です: `xcode-select --install`
+> Requires Xcode Command Line Tools: `xcode-select --install`
 
-### 4. Ollama（翻訳機能を使う場合）
+### 4. Ollama (optional, for translation)
 
 ```bash
-# Ollamaのインストール（未導入の場合）
 brew install ollama
-
-# 翻訳モデルのダウンロード
 ollama pull translategemma:4b
 ```
 
-## 使い方
+## Usage
 
-### 起動
+### Launch
 
 ```bash
 ./run.sh
 ```
 
-または:
+Or manually:
 
 ```bash
 source venv/bin/activate
 python main.py
 ```
 
-### 操作手順
+### Steps
 
-1. **音声キャプチャ方式を選択** — ScreenCaptureKit（アプリ別）またはBlackHole（システム音声）
-2. **対象アプリを選択** — ScreenCaptureKit使用時は、キャプチャしたいアプリを一覧から選択
-3. **Whisperモデル・言語を設定** — モデルサイズと音声の言語を選択
-4. **翻訳を設定（任意）** — 「翻訳を有効にする」にチェック → 翻訳元/先の言語を選択
-5. **「開始」をクリック** — 初回はモデルダウンロードに時間がかかります
+1. **Select audio capture method** — ScreenCaptureKit (per-app) or BlackHole (system audio)
+2. **Select the target app** — Choose which app to capture audio from
+3. **Configure Whisper** — Pick model size and audio language
+4. **Enable translation (optional)** — Check "Enable translation", select source/target languages
+5. **Click Start** — First run downloads the Whisper model, which may take a while
 
-### 字幕オーバーレイの操作
+### Overlay controls
 
-- **ドラッグ** — 字幕ウィンドウをドラッグで移動
-- **マウスホイール** — フォントサイズの変更
-- **右クリック** — 表示モード切替（短文/リスト）、フォントサイズ変更
+- **Drag** — Move the subtitle window by dragging
+- **Scroll wheel** — Adjust font size
+- **Right-click** — Switch display mode (short / list), change font size
 
-## 音声キャプチャ方式
+## Audio capture methods
 
-### ScreenCaptureKit（推奨）
+### ScreenCaptureKit (recommended)
 
-特定アプリの音声だけをキャプチャします。初回起動時にmacOSの「画面収録」権限の許可が必要です。
+Captures audio from a specific app only. Requires macOS Screen Recording permission on first launch.
 
 ### BlackHole
 
-[BlackHole](https://github.com/ExistentialAudio/BlackHole)仮想オーディオデバイス経由でシステム全体の音声をキャプチャします。別途BlackHoleのインストールとmacOSのオーディオ設定が必要です。
+Captures system-wide audio via the [BlackHole](https://github.com/ExistentialAudio/BlackHole) virtual audio device. Requires separate installation and macOS audio configuration.
 
-## ライセンス
+## License
 
-[MIT License](LICENSE)
+[MIT](LICENSE)

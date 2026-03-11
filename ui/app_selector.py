@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class AppSelectorWindow:
-    """アプリ選択・設定画面"""
+    """App selection and settings window"""
 
     def __init__(self, root: tk.Tk,
                  on_start: Callable[[AppConfig], None],
@@ -27,7 +27,7 @@ class AppSelectorWindow:
         self._processes: list[ProcessInfo] = []
         self._is_running = False
 
-        self._root.title("LLM Trans - リアルタイム字幕")
+        self._root.title("LLM Trans - Real-time Subtitles")
         self._root.geometry("520x700")
         self._root.resizable(False, False)
 
@@ -39,19 +39,19 @@ class AppSelectorWindow:
     def _build_ui(self) -> None:
         pad = {'padx': 10, 'pady': 5}
 
-        # --- バックエンド選択 ---
-        frame_backend = ttk.LabelFrame(self._root, text="音声キャプチャ方式")
+        # --- Audio Backend ---
+        frame_backend = ttk.LabelFrame(self._root, text="Audio Capture")
         frame_backend.pack(fill=tk.X, **pad)
 
         self._backend_var = tk.StringVar(value="sck")
         backends = []
         if self._sck_available:
-            backends.append(("ScreenCaptureKit (アプリ別)", "sck"))
+            backends.append(("ScreenCaptureKit (Per-app)", "sck"))
         if self._blackhole_available:
-            backends.append(("BlackHole (システム音声)", "blackhole"))
+            backends.append(("BlackHole (System audio)", "blackhole"))
 
         if not backends:
-            backends.append(("利用可能なバックエンドなし", "none"))
+            backends.append(("No backend available", "none"))
 
         for text, val in backends:
             ttk.Radiobutton(
@@ -61,11 +61,11 @@ class AppSelectorWindow:
 
         if not self._sck_available and not self._blackhole_available:
             ttk.Label(frame_backend,
-                      text="画面収録の権限を許可してください",
+                      text="Please grant Screen Recording permission",
                       foreground="red").pack(padx=20)
 
-        # --- アプリ選択 ---
-        frame_apps = ttk.LabelFrame(self._root, text="対象アプリ")
+        # --- App Selection ---
+        frame_apps = ttk.LabelFrame(self._root, text="Target App")
         frame_apps.pack(fill=tk.BOTH, expand=True, **pad)
 
         list_frame = ttk.Frame(frame_apps)
@@ -81,17 +81,17 @@ class AppSelectorWindow:
         self._app_listbox.pack(fill=tk.BOTH, expand=True)
         scrollbar.config(command=self._app_listbox.yview)
 
-        ttk.Button(frame_apps, text="更新",
+        ttk.Button(frame_apps, text="Refresh",
                    command=self._refresh_processes).pack(pady=5)
 
-        # --- モデル選択 ---
-        frame_model = ttk.LabelFrame(self._root, text="Whisperモデル")
+        # --- Whisper Model ---
+        frame_model = ttk.LabelFrame(self._root, text="Whisper Model")
         frame_model.pack(fill=tk.X, **pad)
 
         model_frame = ttk.Frame(frame_model)
         model_frame.pack(padx=20, pady=5)
 
-        ttk.Label(model_frame, text="モデル:").pack(side=tk.LEFT)
+        ttk.Label(model_frame, text="Model:").pack(side=tk.LEFT)
         self._model_var = tk.StringVar(value="large-v3")
         model_combo = ttk.Combobox(
             model_frame, textvariable=self._model_var,
@@ -100,7 +100,7 @@ class AppSelectorWindow:
         )
         model_combo.pack(side=tk.LEFT, padx=5)
 
-        ttk.Label(model_frame, text="言語:").pack(side=tk.LEFT, padx=(10, 0))
+        ttk.Label(model_frame, text="Language:").pack(side=tk.LEFT, padx=(10, 0))
         self._lang_var = tk.StringVar(value="en")
         lang_combo = ttk.Combobox(
             model_frame, textvariable=self._lang_var,
@@ -109,14 +109,14 @@ class AppSelectorWindow:
         )
         lang_combo.pack(side=tk.LEFT, padx=5)
 
-        # --- オーバーレイ設定 ---
-        frame_overlay = ttk.LabelFrame(self._root, text="字幕表示")
+        # --- Overlay Settings ---
+        frame_overlay = ttk.LabelFrame(self._root, text="Subtitle Display")
         frame_overlay.pack(fill=tk.X, **pad)
 
         overlay_inner = ttk.Frame(frame_overlay)
         overlay_inner.pack(padx=20, pady=5)
 
-        ttk.Label(overlay_inner, text="フォントサイズ:").pack(side=tk.LEFT)
+        ttk.Label(overlay_inner, text="Font size:").pack(side=tk.LEFT)
         self._font_size_var = tk.IntVar(value=24)
         font_spin = ttk.Spinbox(
             overlay_inner, from_=10, to=60, increment=2,
@@ -124,7 +124,7 @@ class AppSelectorWindow:
         )
         font_spin.pack(side=tk.LEFT, padx=5)
 
-        ttk.Label(overlay_inner, text="表示:").pack(side=tk.LEFT, padx=(10, 0))
+        ttk.Label(overlay_inner, text="Mode:").pack(side=tk.LEFT, padx=(10, 0))
         self._display_mode_var = tk.StringVar(value="short")
         mode_combo = ttk.Combobox(
             overlay_inner, textvariable=self._display_mode_var,
@@ -132,13 +132,13 @@ class AppSelectorWindow:
         )
         mode_combo.pack(side=tk.LEFT, padx=5)
 
-        # --- 翻訳設定 ---
-        frame_trans = ttk.LabelFrame(self._root, text="翻訳 (Ollama)")
+        # --- Translation Settings ---
+        frame_trans = ttk.LabelFrame(self._root, text="Translation (Ollama)")
         frame_trans.pack(fill=tk.X, **pad)
 
         self._trans_enabled_var = tk.BooleanVar(value=False)
         chk = ttk.Checkbutton(
-            frame_trans, text="翻訳を有効にする",
+            frame_trans, text="Enable translation",
             variable=self._trans_enabled_var,
             command=self._on_translation_toggle,
         )
@@ -147,12 +147,12 @@ class AppSelectorWindow:
         trans_inner = ttk.Frame(frame_trans)
         trans_inner.pack(fill=tk.X, padx=20, pady=5)
 
-        ttk.Label(trans_inner, text="ホスト:").grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(trans_inner, text="Host:").grid(row=0, column=0, sticky=tk.W)
         self._ollama_host_var = tk.StringVar(value="http://localhost:11434")
         host_entry = ttk.Entry(trans_inner, textvariable=self._ollama_host_var, width=28)
         host_entry.grid(row=0, column=1, padx=5, sticky=tk.W)
 
-        ttk.Label(trans_inner, text="モデル:").grid(row=1, column=0, sticky=tk.W, pady=(5, 0))
+        ttk.Label(trans_inner, text="Model:").grid(row=1, column=0, sticky=tk.W, pady=(5, 0))
         model_trans_frame = ttk.Frame(trans_inner)
         model_trans_frame.grid(row=1, column=1, padx=5, pady=(5, 0), sticky=tk.W)
 
@@ -164,15 +164,14 @@ class AppSelectorWindow:
         self._ollama_model_combo.pack(side=tk.LEFT)
 
         self._refresh_models_btn = ttk.Button(
-            model_trans_frame, text="取得",
+            model_trans_frame, text="Fetch",
             command=self._refresh_ollama_models, width=5,
         )
         self._refresh_models_btn.pack(side=tk.LEFT, padx=5)
 
         lang_labels = [f"{code} ({name})" for code, name in LANGUAGES.items()]
-        lang_codes = list(LANGUAGES.keys())
 
-        ttk.Label(trans_inner, text="翻訳元:").grid(row=2, column=0, sticky=tk.W, pady=(5, 0))
+        ttk.Label(trans_inner, text="From:").grid(row=2, column=0, sticky=tk.W, pady=(5, 0))
         src_frame = ttk.Frame(trans_inner)
         src_frame.grid(row=2, column=1, padx=5, pady=(5, 0), sticky=tk.W)
 
@@ -183,7 +182,7 @@ class AppSelectorWindow:
         )
         src_combo.pack(side=tk.LEFT)
 
-        ttk.Label(trans_inner, text="翻訳先:").grid(row=3, column=0, sticky=tk.W, pady=(5, 0))
+        ttk.Label(trans_inner, text="To:").grid(row=3, column=0, sticky=tk.W, pady=(5, 0))
         tgt_frame = ttk.Frame(trans_inner)
         tgt_frame.grid(row=3, column=1, padx=5, pady=(5, 5), sticky=tk.W)
 
@@ -198,23 +197,23 @@ class AppSelectorWindow:
                                self._refresh_models_btn, src_combo, tgt_combo]
         self._on_translation_toggle()
 
-        # --- ステータス + ボタン ---
+        # --- Status + Buttons ---
         frame_bottom = ttk.Frame(self._root)
         frame_bottom.pack(fill=tk.X, **pad)
 
         self._status_label = ttk.Label(
-            frame_bottom, text="準備完了", font=("Hiragino Sans", 11)
+            frame_bottom, text="Ready", font=("Hiragino Sans", 11)
         )
         self._status_label.pack(side=tk.LEFT, expand=True)
 
         self._stop_btn = ttk.Button(
-            frame_bottom, text="停止", command=self._stop_clicked,
+            frame_bottom, text="Stop", command=self._stop_clicked,
             state=tk.DISABLED
         )
         self._stop_btn.pack(side=tk.RIGHT, padx=5)
 
         self._start_btn = ttk.Button(
-            frame_bottom, text="開始", command=self._start_clicked
+            frame_bottom, text="Start", command=self._start_clicked
         )
         self._start_btn.pack(side=tk.RIGHT, padx=5)
 
@@ -235,13 +234,13 @@ class AppSelectorWindow:
         backend_str = self._backend_var.get()
 
         if backend_str == "none":
-            self.set_status("バックエンドが利用できません", "red")
+            self.set_status("No backend available", "red")
             return
 
         if backend_str == "sck":
             sel = self._app_listbox.curselection()
             if not sel:
-                self.set_status("アプリを選択してください", "red")
+                self.set_status("Please select an app", "red")
                 return
             proc = self._processes[sel[0]]
             backend_type = AudioBackendType.SCK
@@ -279,7 +278,7 @@ class AppSelectorWindow:
         self._is_running = True
         self._start_btn.config(state=tk.DISABLED)
         self._stop_btn.config(state=tk.NORMAL)
-        self.set_status("初期化中...", "orange")
+        self.set_status("Initializing...", "orange")
 
         self._on_start(config)
 
@@ -288,7 +287,7 @@ class AppSelectorWindow:
         self._start_btn.config(state=tk.NORMAL)
         self._stop_btn.config(state=tk.DISABLED)
         self._on_stop()
-        self.set_status("停止しました")
+        self.set_status("Stopped")
 
     def _on_translation_toggle(self) -> None:
         enabled = self._trans_enabled_var.get()
@@ -304,10 +303,10 @@ class AppSelectorWindow:
             self._ollama_model_var.set(models[0])
         else:
             self._ollama_model_var.set("")
-            self.set_status("Ollamaモデル取得失敗", "red")
+            self.set_status("Failed to fetch Ollama models", "red")
 
     def _restore_settings(self) -> None:
-        """保存済みの設定をUIに復元する。"""
+        """Restore saved settings to UI."""
         s = self._saved
         self._backend_var.set(s.audio_backend.value)
         self._model_var.set(s.whisper_model.value)
@@ -317,7 +316,6 @@ class AppSelectorWindow:
         self._trans_enabled_var.set(s.enable_translation)
         self._ollama_host_var.set(s.ollama_host)
         self._ollama_model_var.set(s.ollama_model)
-        # 言語コード → コンボボックス表示値
         src_name = LANGUAGES.get(s.translation_source_lang, s.translation_source_lang)
         tgt_name = LANGUAGES.get(s.translation_target_lang, s.translation_target_lang)
         self._trans_src_var.set(f"{s.translation_source_lang} ({src_name})")

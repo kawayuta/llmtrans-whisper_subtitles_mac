@@ -37,7 +37,7 @@ class TranscriptionPipeline:
     def initialize(self) -> None:
         """Whisperモデルをロード（時間がかかる）"""
         for i in range(self._config.num_workers):
-            self._on_status(f"モデル読み込み中 ({i + 1}/{self._config.num_workers})...")
+            self._on_status(f"Loading model ({i + 1}/{self._config.num_workers})...")
             worker = TranscriptionWorker(
                 worker_id=i,
                 model_size=self._config.whisper_model.value,
@@ -54,11 +54,11 @@ class TranscriptionPipeline:
         self._ring_buffer = RingBuffer(capacity)
 
         if self._config.enable_translation:
-            self._on_status("Ollama接続確認中...")
+            self._on_status("Checking Ollama connection...")
             if not translator.check_connection(self._config.ollama_host):
                 raise RuntimeError(
-                    f"Ollamaに接続できません: {self._config.ollama_host}\n"
-                    "Ollamaが起動していることを確認してください。"
+                    f"Cannot connect to Ollama: {self._config.ollama_host}\n"
+                    "Make sure Ollama is running."
                 )
             self._translation_prompt = translator.build_prompt(
                 self._config.translation_source_lang,
@@ -67,7 +67,7 @@ class TranscriptionPipeline:
             logger.info(f"Ollama翻訳有効: model={self._config.ollama_model} "
                         f"{self._config.translation_source_lang}→{self._config.translation_target_lang}")
 
-        self._on_status("モデル読み込み完了")
+        self._on_status("Model loaded")
 
     def feed_audio(self, audio: np.ndarray) -> None:
         """音声バックエンドからのコールバック"""
